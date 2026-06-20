@@ -17,18 +17,19 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/login");
-      return;
-    }
-    // Позже подключим реальные данные
-    setStats({
-      total_users: 0,
-      total_trips: 0,
-      total_bookings: 0,
-      pending_drivers: 0,
-    });
+    const load = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+      const res = await fetch("http://localhost:8000/api/v1/admin/stats", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setStats(data.data);
+    };
+    load();
   }, []);
 
   const handleLogout = () => {
