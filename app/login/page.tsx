@@ -19,22 +19,26 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const res = await fetch(
-      `http://localhost:8000/api/v1/auth/admin/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`,
-      { method: "POST" }
-    );
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/admin/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`,
+        { method: "POST" }
+      );
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      setError(data.detail || "Ошибка входа");
+      if (!res.ok) {
+        setError(data.detail || "Ошибка входа");
+        return;
+      }
+
+      localStorage.setItem("token", data.access_token);
+      router.push("/dashboard");
+    } catch {
+      setError("Нет связи с сервером. Проверьте что бэкенд запущен на порту 8000.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    localStorage.setItem("token", data.access_token);
-    router.push("/dashboard");
-    setLoading(false);
   };
 
   return (

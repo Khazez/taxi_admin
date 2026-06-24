@@ -15,6 +15,7 @@ interface Stats {
 export default function DashboardPage() {
   const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -23,14 +24,27 @@ export default function DashboardPage() {
         router.push("/login");
         return;
       }
-      const res = await fetch("http://localhost:8000/api/v1/admin/stats", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      setStats(data.data);
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/stats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem("token");
+          router.push("/login");
+          return;
+        }
+        if (!res.ok) {
+          setError(`Ошибка сервера: ${res.status}`);
+          return;
+        }
+        const data = await res.json();
+        setStats(data.data);
+      } catch {
+        setError("Нет связи с сервером. Проверьте что бэкенд запущен на порту 8000.");
+      }
     };
     load();
-  }, []);
+  }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -59,6 +73,11 @@ export default function DashboardPage() {
 
         <main className="flex-1 p-6">
           <h2 className="text-2xl font-semibold mb-6">Обзор</h2>
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {error}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <StatCard title="Пользователи" value={stats?.total_users ?? "—"} />
             <StatCard title="Поездки" value={stats?.total_trips ?? "—"} />

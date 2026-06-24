@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 
-const API = "http://localhost:8000/api/v1";
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
 type VerificationStatus = "pending" | "verified" | "rejected";
 
@@ -83,7 +83,7 @@ export default function DriversPage() {
     if (!token) return;
 
     try {
-      const res = await fetch(`${API}/drivers/unverified`, {
+      const res = await fetch(`${API}/drivers/all`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 401) {
@@ -91,8 +91,26 @@ export default function DriversPage() {
         return;
       }
       const data = await res.json();
-      const list = data.data ?? data;
-      setDrivers(Array.isArray(list) ? list : []);
+      const list: any[] = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
+      const mapped: DriverProfile[] = list.map((d: any) => ({
+        id: d.id,
+        user_id: d.user_id,
+        full_name: d.name ?? "",
+        phone: d.phone ?? "",
+        car_model: `${d.car_brand ?? ""} ${d.car_model ?? ""}`.trim(),
+        car_number: d.car_number ?? "",
+        verification_status: d.is_verified
+          ? "verified"
+          : d.rejection_reason
+          ? "rejected"
+          : "pending",
+        rejection_reason: d.rejection_reason ?? null,
+        license_url: d.license_doc_url ?? null,
+        tech_passport_url: d.car_doc_url ?? null,
+        rating: d.rating ?? 0,
+        created_at: d.created_at ?? "",
+      }));
+      setDrivers(mapped);
     } catch {
       console.error("Ошибка загрузки водителей");
     } finally {
@@ -131,13 +149,9 @@ export default function DriversPage() {
     if (!token) return;
     setActionLoading(true);
     try {
-      await fetch(`${API}/drivers/${rejectTarget.id}/reject`, {
+      await fetch(`${API}/drivers/${rejectTarget.id}/reject?reason=${encodeURIComponent(rejectReason)}`, {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ reason: rejectReason }),
+        headers: { Authorization: `Bearer ${token}` },
       });
       setRejectDialogOpen(false);
       await fetchDrivers();
