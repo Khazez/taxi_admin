@@ -18,7 +18,7 @@ const API = "http://localhost:8000/api/v1";
 
 interface Trip {
   id: number;
-  route_id: number;
+  route_name: string;
   driver_id: number;
   departure_time: string;
   seats_total: number;
@@ -147,7 +147,7 @@ export default function TripsPage() {
                   {filtered.map((trip) => (
                     <TableRow key={trip.id}>
                       <TableCell className="font-medium">#{trip.id}</TableCell>
-                      <TableCell>Маршрут #{trip.route_id}</TableCell>
+                      <TableCell>{trip.route_name ?? "—"}</TableCell>
                       <TableCell>{formatDate(trip.departure_time)}</TableCell>
                       <TableCell>{trip.seats_available} / {trip.seats_total}</TableCell>
                       <TableCell>{trip.price_per_seat.toLocaleString()} ₸</TableCell>
